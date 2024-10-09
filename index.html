@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tezz Ambulance - Book Ambulance</title>
+    <style>
+        /* Set the map height explicitly */
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+
+        /* Full window style */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        form {
+            margin: 20px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: green;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: gray;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Tezz Ambulance Booking</h2>
+
+<form id="bookingForm">
+    <label for="currentLocation">Current Location:</label>
+    <input type="text" id="currentLocation" placeholder="Click on the map to set current location" readonly>
+
+    <label for="destination">Destination:</label>
+    <input type="text" id="destination" placeholder="Click on the map to set destination" readonly>
+
+    <label for="distance">Distance (in km):</label>
+    <input type="text" id="distance" placeholder="Distance will be auto-calculated" disabled>
+
+    <button type="button" id="bookBtn">Book Ambulance</button>
+</form>
+
+<!-- Map will be displayed here -->
+<div id="map"></div>
+
+<script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBPzSUmv6mvyKljRIUODnVuvFbJXYiNjdM&callback=initMap&libraries=places">
+</script>
+
+<script>
+    let map, currentPositionMarker, destinationMarker;
+    const geocoder = new google.maps.Geocoder();
+    const distanceService = new google.maps.DistanceMatrixService();
+
+    // Initialize and add the map
+    function initMap() {
+        // Create the map centered at a default location
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: { lat: 40.1215, lng: -100.4504 }, // Change to your desired default location
+            zoom: 10,
+        });
+
+        // Add click listener to the map
+        map.addListener('click', (event) => {
+            if (!currentPositionMarker) {
+                setCurrentLocation(event.latLng);
+            } else if (!destinationMarker) {
+                setDestination(event.latLng);
+            }
+        });
+
+        // Add draggable markers for user selection
+        currentPositionMarker = new google.maps.Marker({
+            position: map.getCenter(),
+            map: map,
+            title: "Current Location",
+            draggable: true,
+        });
+
+        currentPositionMarker.addListener('dragend', function(event) {
+            geocodeLatLng(event.latLng, "currentLocation");
+            calculateDistance(destinationMarker.getPosition());
+        });
+
+        destinationMarker = new google.maps.Marker({
+            position: null,
+            map: map,
+            title: "Destination",
+            draggable: true,
+        });
+
+        destinationMarker.addListener('dragend', function(event) {
+            geocodeLatLng(event.latLng, "destination");
+            calculateDistance(currentPositionMarker.getPosition());
+        });
+
+        // Set the default location for the current position
+        geocodeLatLng(currentPositionMarker.getPosition(), "currentLocation");
+    }
+
+    // Set the current location and place a marker
+    function setCurrentLocation(location) {
+        currentPositionMarker.setPosition(location);
+        geocodeLatLng(location, "currentLocation");
+        calculateDistance(destinationMarker.getPosition());
+    }
+
+    // Set the destination location and place a marker
+    function setDestination(location) {
+        destinationMarker.setPosition(location);
+        geocodeLatLng(location, "destination");
+        calculateDistance(currentPositionMarker.getPosition());
+    }
+
+    // Reverse geocoding to get the address from lat/lng
+    function geocodeLatLng(latlng, elementId) {
+        geocoder.geocode({ location: latlng }, (results, status) => {
+            if (status === "OK") {
+                if (results[0]) {
+                    document.getElementById(elementId).value = results[0].formatted_address;
+                } else {
+                    alert("No results found");
+                }
+            } else {
+                alert("Geocoder failed due to: " + status);
+            }
+        });
+    }
+
+    // Calculate the distance between current and destination locations
+    function calculateDistance(destination) {
+        if (currentPositionMarker.getPosition() && destination) {
+            distanceService.getDistanceMatrix(
+                {
+                    origins: [currentPositionMarker.getPosition()],
+                    destinations: [destination],
+                    travelMode: "DRIVING",
+                },
+                (response, status) => {
+                    if (status === "OK") {
+                        const distance = response.rows[0].elements[0].distance.text;
+                        document.getElementById("distance").value = distance;
+                    } else {
+                        alert("Error calculating distance: " + status);
+                    }
+                }
+            );
+        }
+    }
+
+    // Simulate booking the ambulance
+    document.getElementById("bookBtn").addEventListener("click", bookAmbulance);
+    function bookAmbulance() {
+        const currentLocation = document.getElementById("currentLocation").value;
+        const destination = document.getElementById("destination").value;
+
+        if (!currentLocation || !destination) {
+            alert("Please set both current location and destination.");
+            return;
+        }
+
+        // Simulate saving the data in Google Sheets and dialing the phone number
+        setTimeout(() => {
+            alert("Ambulance booked successfully! Your details will be saved.");
+            // Dial a number here or make API calls as needed
+            // Simulate dialing a number
+            window.location.href = "tel:+9112345678"; // Example phone number
+        }, 1000);
+    }
+</script>
+
+</body>
+</html>
