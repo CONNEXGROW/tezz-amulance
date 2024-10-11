@@ -1,245 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Ambulance with Distance Calculation</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    #controls {
-      margin: 20px;
-      width: 100%;
-      max-width: 600px;
-      padding: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
-      background-color: white;
-    }
-
-    #map {
-      height: 400px;
-      width: 100%;
-      max-width: 600px;
-      margin: 20px 0;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    button {
-      padding: 10px 15px;
-      margin-right: 10px;
-      cursor: pointer;
-    }
-
-    input, select {
-      padding: 8px;
-      width: calc(100% - 20px);
-      margin-bottom: 10px;
-    }
-
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-
-    #distance-output {
-      margin-top: 10px;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Ambulance</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+        }
+        label {
+            margin-top: 10px;
+            display: block;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        input[type="text"]:required {
+            border-color: red;
+        }
+    </style>
 </head>
 <body>
-  <h1>Book Ambulance </h1>
-  <div id="controls">
-    <label for="name">Name:</label>
-    <input id="name" type="text" placeholder="Enter your name">
-    <br>
-    <label for="phone">Phone Number:</label>
-    <input id="phone" type="text" placeholder="Enter your phone number">
-    <br>
-    <label for="current-location">Current Location:</label>
-    <input id="current-location" type="text" placeholder="Enter your current location">
-    <button id="locate-btn" onclick="locateUser()">Use My Current Location</button>
-    <br><br>
-    <label for="destination">Enter Destination Location:</label>
-    <select id="destination-option" onchange="toggleDestinationInput()">
-      <option value="manual">Write Manually</option>
-      <option value="hospital">Select a Hospital</option>
-    </select>
-    <br>
-    <input id="destination" type="text" placeholder="Type a destination" style="display: none;">
-    <select id="hospital-select" style="display: none;" onchange="setHospitalDestination()">
-      <option value="">Select a Hospital</option>
-      <option value="22.8055,86.2029">Tata Main Hospital, Jamshedpur</option>
-      <!-- Add more hospitals as needed -->
-    </select>
-    <br><br>
-    <button id="calc-btn" onclick="calculateDistance()" disabled>Calculate Distance</button>
-    <div id="distance-output"></div>
-    <br>
-    <button id="book-btn" onclick="bookAmbulance()" disabled>Book Ambulance</button>
-  </div>
-  <div id="map"></div>
+    <h1>Book an Ambulance</h1>
+    <form id="ambulanceForm" onsubmit="return submitForm(event)">
+        <!-- Name field -->
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
 
-  <script>
-    let map = L.map('map').setView([22.8055, 86.2029], 13);  // Default to Jamshedpur
-    let currentLocation = null;
-    let destinationLocation = null;
-    let currentMarker = null;
-    let destinationMarker = null;
-    let distance = 0;
+        <!-- Phone field -->
+        <label for="phone">Phone:</label>
+        <input type="text" id="phone" name="phone" required>
 
-    // Load OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+        <!-- Location field -->
+        <label for="location">Your Location:</label>
+        <input type="text" id="location" name="location" required>
+        <button type="button" onclick="getLocation()">Use Current Location</button>
 
-    // Function to locate the user
-    function locateUser() {
-      if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser.");
-        return;
-      }
+        <!-- Submit button -->
+        <button type="submit">Book Ambulance</button>
+    </form>
 
-      alert("Attempting to retrieve your location...");
-
-      navigator.geolocation.getCurrentPosition(
-        function (position) {
-          currentLocation = [position.coords.latitude, position.coords.longitude];
-          
-          if (currentMarker) {
-            map.removeLayer(currentMarker);
-          }
-          currentMarker = L.marker(currentLocation).addTo(map).bindPopup("You are here").openPopup();
-          map.setView(currentLocation, 13);
-          
-          // Automatically fill the current location input with address
-          getAddressFromCoordinates(currentLocation[0], currentLocation[1]);
-
-          updateCalculateButtonState();
-        },
-        function (error) {
-          alert("Error retrieving location: " + error.message);
+    <script>
+        // Function to get user's current location
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    document.getElementById('location').value = `Latitude: ${position.coords.latitude}, Longitude: ${position.coords.longitude}`;
+                }, function() {
+                    alert("Unable to retrieve your location.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
         }
-      );
-    }
 
-    // Function to get address from coordinates using Nominatim
-    function getAddressFromCoordinates(lat, lon) {
-      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
-        .then(response => response.json())
-        .then(data => {
-          if (data && data.display_name) {
-            document.getElementById('current-location').value = data.display_name;
-          } else {
-            document.getElementById('current-location').value = "Current Location: " + lat.toFixed(4) + ", " + lon.toFixed(4);
-          }
-        })
-        .catch(error => {
-          console.error("Error fetching address:", error);
-          document.getElementById('current-location').value = "Unable to retrieve address.";
-        });
-    }
+        // Handle form submission
+        function submitForm(event) {
+            event.preventDefault(); // Prevent default form submission
 
-    // Function to toggle between manual input and hospital selection
-    function toggleDestinationInput() {
-      const option = document.getElementById('destination-option').value;
-      const destinationInput = document.getElementById('destination');
-      const hospitalSelect = document.getElementById('hospital-select');
+            // Use FormData to gather form data
+            const formData = new FormData(document.getElementById('ambulanceForm'));
 
-      if (option === 'manual') {
-        destinationInput.style.display = 'block';
-        hospitalSelect.style.display = 'none';
-        destinationInput.value = ''; // Clear previous input
-      } else {
-        destinationInput.style.display = 'none';
-        hospitalSelect.style.display = 'block';
-        hospitalSelect.value = ''; // Clear previous selection
-      }
-    }
+            // Send data to Google Apps Script
+            fetch('https://script.google.com/macros/s/AKfycbzwaX2ez6-PzMNzHvX8YYESYvIRRuRlC-5uyh25WCxgla7oDGgf60B4zeIP1gPiIXU/exec', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Open dialer with specified phone number after form submission
+                    window.location.href = 'tel:+917079575742';
+                } else {
+                    alert("There was an error booking the ambulance.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("There was an error booking the ambulance.");
+            });
 
-    // Function to handle hospital selection
-    function setHospitalDestination() {
-      const hospitalSelect = document.getElementById('hospital-select');
-      if (hospitalSelect.value) {
-        destinationLocation = hospitalSelect.value.split(',').map(Number);
-        if (destinationMarker) {
-          map.removeLayer(destinationMarker);
+            return false; // Prevent default form submission
         }
-        destinationMarker = L.marker(destinationLocation).addTo(map).bindPopup("Destination").openPopup();
-        map.setView(destinationLocation, 13);
-        updateCalculateButtonState();
-      }
-    }
-
-    // Function to update the state of the Calculate Distance button
-    function updateCalculateButtonState() {
-      const calcBtn = document.getElementById('calc-btn');
-      const destinationInput = document.getElementById('destination').value.trim();
-
-      calcBtn.disabled = !(currentLocation && (destinationLocation || destinationInput));
-    }
-
-    // Function to calculate the distance using the Haversine formula
-    function calculateDistance() {
-      if (!currentLocation) {
-        alert("Current location is required.");
-        return;
-      }
-
-      const destinationInput = document.getElementById('destination').value.trim();
-      
-      if (destinationInput) {
-        // You can integrate a geocoding API to convert the address into coordinates
-        // For simplicity, using hardcoded coordinates for the destination
-        destinationLocation = [22.7915, 86.1898]; // Hardcoded example coordinates
-
-        if (destinationMarker) {
-          map.removeLayer(destinationMarker);
-        }
-        destinationMarker = L.marker(destinationLocation).addTo(map).bindPopup("Destination").openPopup();
-        map.setView(destinationLocation, 13);
-      }
-
-      // Haversine formula to calculate distance
-      const toRadians = (degrees) => degrees * (Math.PI / 180);
-      
-      const [lat1, lon1] = currentLocation;
-      const [lat2, lon2] = destinationLocation;
-      const R = 6371; // Radius of the Earth in km
-
-      const dLat = toRadians(lat2 - lat1);
-      const dLon = toRadians(lon2 - lon1);
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      distance = R * c;
-
-      document.getElementById('distance-output').textContent = `Distance: ${distance.toFixed(2)} km`;
-      document.getElementById('book-btn').disabled = false; // Enable the booking button
-    }
-
-    // Function to book an ambulance
-    function bookAmbulance() {
-      const name = document.getElementById('name').value;
-      const phone = document.getElementById('phone').value;
-
-      if (!name || !phone || !currentLocation || !destinationLocation) {
-        alert("Please fill all fields and select locations before booking.");
-        return;
-      }
-
-      alert(`Ambulance booked successfully for ${name}.`);
-    }
-  </script>
+    </script>
 </body>
 </html>
